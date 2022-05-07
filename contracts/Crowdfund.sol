@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.10;
 
-contract Crowdfund {
+import "./ERC20.sol";
+
+contract Crowdfund is ERC20 {
 
     event Launch(
         uint id,
@@ -27,14 +29,16 @@ contract Crowdfund {
         bool claimed;
     }
 
-    //IERC20 public immutable token;
+    IERC20 public immutable token;
+    address public immutable tokenAddress;
     uint public count;
     mapping(uint => Campaign) public campaigns;
     mapping(uint => mapping(address => uint)) public pledgedAmount;
 
-    /*constructor(address _token) {
+    constructor(address _token) {
         token = IERC20(_token);
-    }*/
+        tokenAddress = _token;
+    }
 
     receive() external payable {
         emit Log(msg.value, gasleft());
@@ -99,7 +103,7 @@ contract Crowdfund {
         emit Unpledge(_id, msg.sender, _amount);
     }
 
-    function claim(uint _id) external {
+    function claim(uint _id) external payable {
         Campaign storage campaign = campaigns[_id];
         require(msg.sender == campaign.creator, "Not creator");
         require(block.timestamp > campaign.endAt, "Not ended");
@@ -109,10 +113,20 @@ contract Crowdfund {
         (bool success, ) = msg.sender.call{value: campaign.pledged}("");     
         require(success, "Call failed");
         campaign.claimed = true;
-        //token.transfer(msg.sender, campaign.pledged);
+        //token.transferFrom(msg.sender, campaign.pledged);
         
 
         emit Claim(_id);
+    }
+
+    function claimShares(uint _id) external {
+        require(pledgedAmount[_id][msg.sender] > 0, "Nothing pledged");
+        //uint amountDue = pledgedAmount[_id][msg.sender] * 100 / campaigns[_id].goal;
+        token.sendToAddress(address(this), msg.sender, pledgedAmount[_id][msg.sender] / 10**16);
+    }
+
+    function getTokens(uint amount) external payable {
+        token.sendToContract(address(this), amount);
     }
 
     function refund(uint _id) external {
@@ -129,4 +143,8 @@ contract Crowdfund {
         
         emit Refund(_id, msg.sender, bal);
     }
+
+
+
+
 }
