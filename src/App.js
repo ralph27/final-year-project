@@ -2,6 +2,7 @@ import './App.css';
 import React, { useEffect, useState } from 'react';
 import { connectWallet, getCampaignsCount, pedgeAmount } from './utils/CrowdfundInteract';
 import { mint, getTotalSupply, subscribeToTransfer, balanceOf } from './utils/ERC20Interact';
+import axios from 'axios';
 
 function App() {
 
@@ -9,6 +10,7 @@ function App() {
   const [count, setCount] = useState(1);
   const [totalSupply, setTotalSupply] = useState(0);
   const [myBalance, setMyBalance] = useState("");
+  const [campaigns, setCampaigns] = useState([])
 
   function addWalletListener() {
     if (window.ethereum) {
@@ -57,6 +59,15 @@ function App() {
   } 
   }
 
+  const getCampaigns = async () => {
+      await axios
+         .get("http://localhost:8080/all-blog")
+         .then((res) => setCampaigns(res.data))
+         .catch(err => console.log(err));
+   
+  }
+
+  console.log(campaigns);
   useEffect(() => {
   ( async () => {
     await connectWalletPressed();
@@ -78,6 +89,7 @@ function App() {
       <h1 onClick={mintClicked}>Mint</h1>
       <h1>Total Supply: {totalSupply}</h1>
       <h1 onClick={getBalanceOf}>Balance of</h1>
+      <h1 onClick={getCampaigns}>Get Campaigns</h1>
     </div>
   );
 }
